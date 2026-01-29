@@ -1,38 +1,38 @@
 import csv
+import random
 from collections import Counter
-from sklearn.model_selection import train_test_split
+import math
 
-def headers_zone(pathway):
-    labels=[]
-    data=[]
+def headers_zone(filepath, has_header=True):     #Wczytanie datasetu
+    labels = []
+    data = []
 
-    try:
-        with open(pathway,encoding="utf-8") as file:
+    with open(filepath, encoding="utf-8") as csvfile:
+        reader = csv.reader(csvfile)
 
-            sniffer = csv.Sniffer()
-            header = sniffer.has_header(file.read(2048))
-            file.seek(0)
+        if has_header:
+            labels = next(reader)
 
-            if header:
-                    column = csv.DictReader(file, delimiter=',')
-                    labels.extend(column.fieldnames)
-                    for row in column:
-                            data.append([row[field] for field in column.fieldnames])
-            else:
-                print('Nie wykryto nagłówków')
-    except IOError as err:
-            print(f"Błąd odczytu pliku z danymi: {err}")
-    return labels, data, column
+        for row in reader:
+            data.append(row)
 
-def counter_zone(pathway):
-    with open(pathway) as file:
-        next (file)
-        count_data = [line.strip().split(',')[-1] for line in file]
-    return count_data
-def data_split(data, train_pct=0.6, test_pct=0.2, val_pct=0.2):
+    return labels, data
 
-    import random
+def labels_zone(labels):                            #Wypisanie etykiet
+        print("Nazwy kolumn:", labels)
 
+def data_zone(data, x=None, y=None):                #Wypisanie danych datasetu
+    if x is None and y is None:
+        for row in data:
+            print(row)
+    else:
+        for row in data[x:y]:
+            print(row)
+
+def data_split(data, train_pct=0.6, test_pct=0.3, val_pct=0.1): #Podział datasetu na zbiór treningowy, testowy i walidacyjny
+
+    total = train_pct + test_pct + val_pct
+    assert math.isclose(total, 1.0)
 
     random.shuffle(data)
 
@@ -45,24 +45,38 @@ def data_split(data, train_pct=0.6, test_pct=0.2, val_pct=0.2):
 
     return train_data, test_data, valid_data
 
+def counter_zone(filepath):                              #Wypisz liczbę klas decyzyjnych
+    with open(filepath) as file:
+        next(file)
+        count_data = [line.strip().split(',')[-1] for line in file]
+    return count_data
+
+def class_zone(data, class_value):                       #Wypisz dane dla podanej wartości klasy decyzyjnej
+    for row in data:
+        if row[-1] == class_value:
+            print(row)
+
+def filesaver(data, filename):                           #Zapisanie danych do pliku csv
+    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(data)
 
 if __name__ == "__main__":
-    pathway = "iris.csv"
+    filepath = "iris.csv"
 
+    labels, data = headers_zone(filepath)
+    labels_zone(labels)
+    print(dict(Counter(counter_zone(filepath))))
+    data_zone(data, 0, 5)
+    train_data, test_data, val_data = data_split(data)
+    filesaver(train_data, "train.csv")
+    class_zone(data, "Iris-versicolor")
 
-labels, data, column = headers_zone(pathway)
-count_data = counter_zone(pathway)
+    for subset in data_split(data):
+        print(f"Ilość elementów w zbiorze: {len(subset)}")
 
-print('\nplik posiada nagłówki. Liczba kolumn w zbiorze wynosi ', len(column.fieldnames))
-print('\n', column.fieldnames)
+    for subset in data_split(data,0.7, 0.2, 0.1):
+        print(f"Ilość elementów w zbiorze: {len(subset)}")
 
-print('\n', dict(Counter(count_data)), '\n')
-
-for subset in data_split(data):
-    print(f"Ilość elementów w zbiorze: {len(subset)}")
-
-for subset in data_split(data, 0.7, 0.2, 0.1):
-    print(f"Ilość elementów w zbiorze: {len(subset)}")
-
-for subset in data_split(data, 0.8, 0.1, 0.1):
-    print(f"Ilość elementów w zbiorze: {len(subset)}")
+    for subset in data_split(data,0.8, 0.1, 0.1):
+        print(f"Ilość elementów w zbiorze: {len(subset)}")
